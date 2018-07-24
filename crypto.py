@@ -1,4 +1,5 @@
 import codecs
+from itertools import cycle
 
 
 def hex_to_base64(hex_bytes):
@@ -48,13 +49,28 @@ def detect_single_byte_xor_cipher(encoded_strings, n=5):
 
     """
     strings = [decrypt_single_byte_xor_cipher(encoded) for encoded in encoded_strings]
-    return (sorted(strings, key=lambda s: -s.count(' '))[:n])
+    return sorted(strings, key=lambda s: -s.count(' '))[:n]
+
+
+def encrypt(text, key):
+    """ Encrypt a string using a repeating key XOR cipher.
+
+    Args:
+        text: String, the text to encrypt.
+        key: String, key to encrypt the text with.
+
+    Returns:
+        The encrypted text as a hex encoded string.
+    """
+    return bytes(ord(char_string) ^ ord(char_key) for char_string, char_key in zip(text, cycle(key))).hex()
 
 
 def main():
-    with open('challenge_4_data.txt', 'r') as f:
-        encoded_strings = f.read().split()
-        
+    text = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
+    solution = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
+    key = 'ICE'
+    encrypted = encrypt(text, key)
+    print(encrypted == solution)
 
 
 if __name__ == '__main__':
