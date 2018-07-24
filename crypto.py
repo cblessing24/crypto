@@ -23,7 +23,7 @@ def fixed_xor(encoded_1, encoded_2):
     return bytes([byte_1 ^ byte_2 for byte_1, byte_2 in zip(buffer_1, buffer_2)])
 
 
-def single_byte_xor_cipher(encoded):
+def decrypt_single_byte_xor_cipher(encoded):
     """ Decrypt a hex encoded string that has been XOR'd against a single character.
 
     Args:
@@ -37,9 +37,25 @@ def single_byte_xor_cipher(encoded):
     return max(strings, key=lambda s: s.count(' '))
 
 
+def detect_single_byte_xor_cipher(encoded_strings, n=5):
+    """ Detect a single byte XOR encrypted hex encoded string and decrypt it.
+
+    Args:
+        encoded_strings: A list of hex encoded strings
+        n: Integer, number of strings to return. (Default=5)
+
+    Returns:
+
+    """
+    strings = [decrypt_single_byte_xor_cipher(encoded) for encoded in encoded_strings]
+    return (sorted(strings, key=lambda s: -s.count(' '))[:n])
+
+
 def main():
-    encoded = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'
-    print(single_byte_xor_cipher(encoded))
+    with open('challenge_4_data.txt', 'r') as f:
+        encoded_strings = f.read().split()
+        
+
 
 if __name__ == '__main__':
     main()
