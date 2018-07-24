@@ -65,12 +65,31 @@ def encrypt(text, key):
     return bytes(ord(char_string) ^ ord(char_key) for char_string, char_key in zip(text, cycle(key))).hex()
 
 
+def edit_distance(string_1, string_2):
+    """ Calculate the edit (Hamming) distance between two strings.
+
+    Args:
+        string_1: The first string.
+        string_2: The second string.
+
+    Returns:
+        The edit distance between the strings as an integer.
+    """
+    if not isinstance(string_1, str) or not isinstance(string_2, str):
+        raise ValueError('Inputs must be strings!')
+    if len(string_1) != len(string_2):
+        raise ValueError('Inputs must have same length!')
+    distance = 0
+    for char_1, char_2 in zip(string_1, string_2):
+        binary_1, binary_2 = (bin(ord(char))[2:].zfill(8) for char in (char_1, char_2))
+        distance += sum(bit_1 != bit_2 for bit_1, bit_2 in zip(binary_1, binary_2))
+    return distance
+
+
 def main():
-    text = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
-    solution = "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
-    key = 'ICE'
-    encrypted = encrypt(text, key)
-    print(encrypted == solution)
+    string_1 = 'this is a test'
+    string_2 = 'wokka wokka!!!'
+    print(edit_distance(string_1, string_2))
 
 
 if __name__ == '__main__':
