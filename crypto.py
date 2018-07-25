@@ -14,6 +14,23 @@ def hex_to_base64(hex_string):
     return base64.b64encode(bytes.fromhex(hex_string))
 
 
+def score(string):
+    """ Score a piece of english plaintext according to letter frequencies.
+
+    Args:
+        string: The string to be scored.
+
+    Returns:
+        The score of the string normalized by the length of the string.
+    """
+    letter_frequencies = {
+        'a': 8.167, 'b': 1.492, 'c': 2.782, 'd': 4.253, 'e': 12.702, 'f': 2.228, 'g': 2.015, 'h': 6.094, 'i': 6.966,
+        'j': 0.153, 'k': 0.772, 'l': 4.025, 'm': 2.406, 'n': 6.749, 'o': 7.507, 'p': 1.929, 'q': 0.095, 'r': 5.987,
+        's': 6.327, 't': 9.056, 'u': 2.758, 'v': 0.978, 'w': 2.360, 'x': 0.150, 'y': 1.974, 'z': 0.074
+    }
+    return sum(letter_frequencies.get(char, 0) for char in string) / len(string)
+
+
 def fixed_xor(encoded_1, encoded_2):
     """ Take two equal length strings, hex decode them and produce their XOR combination.
 
@@ -128,10 +145,8 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40):
 
 
 def main():
-    hex_encoded = '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d'
-    solution = b'SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t'
-    result = hex_to_base64(hex_encoded)
-    print(result == solution)
+    print(score('Hallo Albert!'))
+    print(score('..g.,.,rrg'))
 
 
 if __name__ == '__main__':
