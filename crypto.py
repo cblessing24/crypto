@@ -87,11 +87,36 @@ def edit_distance(string_1, string_2):
     return distance
 
 
-def decrypt(encrypted):
-    key_size = 6
-    # Take the first key_size worth of bytes and the second key_size worth of bytes
-    bytes_1, bytes_2 = (encrypted[i * key_size : (i + 1) * key_size] for i in range(2))
-    assert len(bytes_1) == len(bytes_2), 'bytes_1 and bytes_2 do not have the same length!'
+def edit_distance_string(string_1, string_2):
+    if not isinstance(string_1, str) or not isinstance(string_2, str):
+        raise ValueError('Inputs must be strings!')
+
+
+
+def decrypt(encrypted, min_key_size=2, max_key_size=40):
+    smallest_distance, key_size = None, None
+    for test_key_size in range(min_key_size, max_key_size + 1):
+        # Take the first test_key_size worth of bytes and the second test_key_size worth of bytes.
+        bytes_1, bytes_2 = (encrypted[i * test_key_size : (i + 1) * test_key_size] for i in range(2))
+        assert len(bytes_1) == len(bytes_2), 'bytes_1 and bytes_2 do not have the same length!'
+        # Calculate the edit distance between the first and the second test_key_size worth of bytes.
+        distance = edit_distance(*(''.join(chr(byte) for byte in bytes_) for bytes_ in (bytes_1, bytes_2)))
+        # Normalize the edit distance by dividing by test_key_size.
+        distance /= test_key_size
+        # The test_key_size with the smallest normalized edit distance is probably the test_key_size of the actual key.
+        if smallest_distance is None or distance < smallest_distance:
+            smallest_distance, key_size = distance, test_key_size
+    # Split the encrypted bytes in blocks of length key_size.
+    n_blocks = len(encrypted) // key_size
+    blocks = [encrypted[i * key_size : (i + 1) * key_size] for i in range(n_blocks)]
+    for block in blocks:
+        assert len(block) == key_size, 'Block length does not equal key_size!'
+    # Transpose the blocks: make a block that is the first byte of every block and so on.
+    transposed_blocks = [bytes(transposed_block) for transposed_block in zip(*blocks)]
+    assert len(transposed_blocks) == key_size, 'Number of transposed blocks does not equal key_size!'
+    for transposed_block in transposed_blocks:
+        assert len(transposed_block) == n_blocks, 'Transposed block length does not equal n_blocks!'
+    
 
 
 
