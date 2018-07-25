@@ -17,6 +17,8 @@ def hex_to_base64(hex_string):
 def score(string):
     """ Score a piece of english plaintext according to letter frequencies.
 
+    Source: https://en.wikipedia.org/wiki/Letter_frequency
+
     Args:
         string: The string to be scored.
 
