@@ -2,6 +2,38 @@ import base64
 from itertools import cycle
 
 
+class RepeatingKeyXOR:
+
+    def __init__(self, key):
+        self.key = key
+
+    def encrypt(self, text):
+        """ Encrypt a string using a repeating key XOR cipher.
+
+        Args:
+            text(String): The text to encrypt.
+            key (String): The Key to encrypt the text with.
+
+        Returns:
+            The encrypted text as bytes.
+        """
+        return bytes(ord(text_char) ^ ord(key_char) for text_char, key_char in zip(text, cycle(self.key)))
+
+
+    def decrypt(self, encrypted):
+        """ Decrypt a string using a repeating key XOR cipher.
+
+        Args:
+            encrypted (Bytes): The bytes to decrypt.
+            key (String): The key to decrypt the encrypted bytes with.
+
+        Returns:
+            The decrypted string.
+        """
+        letters = (chr(encrypted_byte ^ ord(key_char)) for encrypted_byte, key_char in zip(encrypted, cycle(self.key)))
+        return ''.join(letters)
+
+
 def hex_to_base64(hex_string):
     """ Convert a hex encoded string to base64.
 
@@ -98,19 +130,6 @@ def detect_single_byte_xor_cipher(encrypted, n=5):
     return sorted(strings, key=lambda s: -s.count(' '))[:n]
 
 
-def encrypt(text, key):
-    """ Encrypt a string using a repeating key XOR cipher.
-
-    Args:
-        text: String, the text to encrypt.
-        key: String, key to encrypt the text with.
-
-    Returns:
-        The encrypted text as a hex encoded string.
-    """
-    return bytes(ord(char_string) ^ ord(char_key) for char_string, char_key in zip(text, cycle(key))).hex()
-
-
 def edit_distance(string_1, string_2):
     """ Calculate the edit (Hamming) distance between two strings.
 
@@ -130,11 +149,6 @@ def edit_distance(string_1, string_2):
         binary_1, binary_2 = (bin(ord(char))[2:].zfill(8) for char in (char_1, char_2))
         distance += sum(bit_1 != bit_2 for bit_1, bit_2 in zip(binary_1, binary_2))
     return distance
-
-
-def edit_distance_string(string_1, string_2):
-    if not isinstance(string_1, str) or not isinstance(string_2, str):
-        raise ValueError('Inputs must be strings!')
 
 
 def decrypt(encrypted, min_key_size=2, max_key_size=40):
@@ -160,14 +174,18 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40):
     assert len(transposed_blocks) == key_size, 'Number of transposed blocks does not equal key_size!'
     for transposed_block in transposed_blocks:
         assert len(transposed_block) == n_blocks, 'Transposed block length does not equal n_blocks!'
-    # Solve each block as if it was single-character XOR.
-    for byte in transposed_blocks[0]:
-        print([byte ^ key for key in range(256)])
+    # Solve each block as if it was single-character XOR and combine the single-character keys to get the whole key.
+    key = ''.join((decrypt_single_character_xor(transposed_block)[0] for transposed_block in transposed_blocks))
 
 
 def main():
-    string = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'
-    print(decrypt_single_character_xor(bytes.fromhex(string)))
+    # with open('challenge_6_data.txt', 'r') as f:
+    #     decrypt(base64.b64decode(f.read()))
+    string = 'Hallo Peter, was geht ab?'
+    repeating_key_xor = RepeatingKeyXOR('gfiorsjhg')
+    encrypted = repeating_key_xor.encrypt(string)
+    decrypted = repeating_key_xor.decrypt(encrypted)
+    print(string == decrypted)
 
 
 if __name__ == '__main__':
