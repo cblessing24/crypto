@@ -52,21 +52,15 @@ def fixed_xor(encoded_1, encoded_2):
     return bytes([byte_1 ^ byte_2 for byte_1, byte_2 in zip(buffer_1, buffer_2)])
 
 
-# def decrypt_single_byte_xor_cipher(encoded):
-#     """ Decrypt a hex encoded string that has been XOR'd against a single character.
-#
-#     Args:
-#         encoded: A hex encoded string.
-#
-#     Returns:
-#         The decrypted string.
-#     """
-#     numbers = bytes.fromhex(encoded)
-#     strings = (''.join(chr(number ^ key) for number in numbers) for key in range(256))
-#     return max(strings, key=lambda s: s.count(' '))
+def decrypt_single_character_xor(encrypted):
+    """ Decrypt a series of bytes that has been XOR'd against a single character.
 
+    Args:
+        encrypted: The encrypted sequence of bytes
 
-def decrypt_single_byte_xor_cipher(encrypted):
+    Returns:
+        The decrypted string.
+    """
     decrypted = (''.join(chr(byte ^ key) for byte in encrypted) for key in range(256))
     return max(decrypted, key=score)
 
@@ -154,7 +148,6 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40):
 
 def main():
     string = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'
-    print(decrypt_single_byte_xor_cipher(bytes.fromhex(string)))
 
 
 if __name__ == '__main__':
