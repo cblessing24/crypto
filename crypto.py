@@ -26,11 +26,12 @@ def score(string):
         The score of the string normalized by the length of the string.
     """
     letter_frequencies = {
-        'a': 8.167, 'b': 1.492, 'c': 2.782, 'd': 4.253, 'e': 12.702, 'f': 2.228, 'g': 2.015, 'h': 6.094, 'i': 6.966,
-        'j': 0.153, 'k': 0.772, 'l': 4.025, 'm': 2.406, 'n': 6.749, 'o': 7.507, 'p': 1.929, 'q': 0.095, 'r': 5.987,
-        's': 6.327, 't': 9.056, 'u': 2.758, 'v': 0.978, 'w': 2.360, 'x': 0.150, 'y': 1.974, 'z': 0.074
+        'a': 0.0651738, 'b': 0.0124248, 'c': 0.0217339, 'd': 0.0349835, 'e': 0.1041442, 'f': 0.0197881, 'g': 0.0158610,
+        'h': 0.0492888, 'i': 0.0558094, 'j': 0.0009033, 'k': 0.0050529, 'l': 0.0331490, 'm': 0.0202124, 'n': 0.0564513,
+        'o': 0.0596302, 'p': 0.0137645, 'q': 0.0008606, 'r': 0.0497563, 's': 0.0515760, 't': 0.0729357, 'u': 0.0225134,
+        'v': 0.0082903, 'w': 0.0171272, 'x': 0.0013692, 'y': 0.0145984, 'z': 0.0007836, ' ': 0.1918182
     }
-    return sum(letter_frequencies.get(char, 0) for char in string) / len(string)
+    return sum(letter_frequencies.get(char, 0) for char in string.lower()) / len(string)
 
 
 def fixed_xor(encoded_1, encoded_2):
@@ -51,18 +52,23 @@ def fixed_xor(encoded_1, encoded_2):
     return bytes([byte_1 ^ byte_2 for byte_1, byte_2 in zip(buffer_1, buffer_2)])
 
 
-def decrypt_single_byte_xor_cipher(encoded):
-    """ Decrypt a hex encoded string that has been XOR'd against a single character.
+# def decrypt_single_byte_xor_cipher(encoded):
+#     """ Decrypt a hex encoded string that has been XOR'd against a single character.
+#
+#     Args:
+#         encoded: A hex encoded string.
+#
+#     Returns:
+#         The decrypted string.
+#     """
+#     numbers = bytes.fromhex(encoded)
+#     strings = (''.join(chr(number ^ key) for number in numbers) for key in range(256))
+#     return max(strings, key=lambda s: s.count(' '))
 
-    Args:
-        encoded: A hex encoded string.
 
-    Returns:
-        The decrypted string.
-    """
-    numbers = bytes.fromhex(encoded)
-    strings = (''.join(chr(number ^ key) for number in numbers) for key in range(256))
-    return max(strings, key=lambda s: s.count(' '))
+def decrypt_single_byte_xor_cipher(encrypted):
+    decrypted = (''.join(chr(byte ^ key) for byte in encrypted) for key in range(256))
+    return max(decrypted, key=score)
 
 
 def detect_single_byte_xor_cipher(encoded_strings, n=5):
@@ -147,8 +153,8 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40):
 
 
 def main():
-    print(score('Hallo Albert!'))
-    print(score('..g.,.,rrg'))
+    string = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'
+    print(decrypt_single_byte_xor_cipher(bytes.fromhex(string)))
 
 
 if __name__ == '__main__':
