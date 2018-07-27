@@ -227,20 +227,33 @@ def decrypt2(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
     return repeating_key_xor.decrypt(encrypted)
 
 
+def get_blocks(encrypted, key_size, n_blocks):
+    return [encrypted[i * key_size : (i + 1) * key_size] for i in range(n_blocks)]
+
+
 def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
-    test_key_size = 10
-    key_size_blocks = [encrypted[i * test_key_size: (i + 1) * test_key_size] for i in range(n_key_size_blocks)]
-    distances = [edit_distance()]
+    smallest_distance, key_size = None, None
+    for test_key_size in range(min_key_size, max_key_size + 1):
+        key_size_blocks = get_blocks(encrypted, test_key_size, n_key_size_blocks)
+        distances = []
+        for index1, index2 in permutations(range(n_key_size_blocks), r=2):
+            key_size_block1, key_size_block2 = key_size_blocks[index1], key_size_blocks[index2]
+            distances.append(edit_distance(key_size_block1, key_size_block2) / test_key_size)
+        distance = sum(distances) / len(distances)
+        if smallest_distance is None or distance < smallest_distance:
+            smallest_distance = distance
+            key_size = test_key_size
+    # Split the encrypted bytes in blocks of length key_size.
+    n_blocks = len(encrypted) // key_size
+    blocks = get_blocks(encrypted, key_size, n_blocks)
+    print(blocks)
+
 
 
 def main():
-    # with open('challenge_6_data.txt', 'r') as f:
-    #     decrypted = decrypt(base64.b64decode(f.read()), n_key_size_blocks=4)
-    #     print(decrypted)
-
-    string1, string2 = 'this is a test', 'wokka wokka!!!'
-    bytes1, bytes2 = (string.encode('utf-8') for string in (string1, string2))
-    print(edit_distance(bytes1, bytes2))
+    with open('challenge_6_data.txt', 'r') as f:
+        decrypted = decrypt(base64.b64decode(f.read()), n_key_size_blocks=4)
+        print(decrypted)
 
 
 if __name__ == '__main__':
