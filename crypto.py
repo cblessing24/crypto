@@ -1,6 +1,5 @@
 import base64
 from itertools import cycle, permutations
-from string import ascii_lowercase
 
 
 class RepeatingKeyXOR:
@@ -196,37 +195,6 @@ def edit_distance(bytes1, bytes2):
     return distance
 
 
-def decrypt2(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
-    smallest_distance, key_size = None, None
-    for test_key_size in range(min_key_size, max_key_size + 1):
-        # Take the first test_key_size worth of bytes and the second test_key_size worth of bytes.
-        bytes_1, bytes_2 = (encrypted[i * test_key_size: (i + 1) * test_key_size] for i in range(2))
-        assert len(bytes_1) == len(bytes_2), 'bytes_1 and bytes_2 do not have the same length!'
-        # Calculate the edit distance between the first and the second test_key_size worth of bytes.
-        distance = edit_distance(*(''.join(chr(byte) for byte in bytes_) for bytes_ in (bytes_1, bytes_2)))
-        # Normalize the edit distance by dividing by test_key_size.
-        distance /= test_key_size
-        # The test_key_size with the smallest normalized edit distance is probably the key size of the actual key.
-        if smallest_distance is None or distance < smallest_distance:
-            smallest_distance, key_size = distance, test_key_size
-    # Split the encrypted bytes in blocks of length key_size.
-    n_blocks = len(encrypted) // key_size
-    blocks = [encrypted[i * key_size: (i + 1) * key_size] for i in range(n_blocks)]
-    for block in blocks:
-        assert len(block) == key_size, 'Block length does not equal key_size!'
-    # Transpose the blocks: make a block that is the first byte of every block and so on.
-    transposed_blocks = [bytes(transposed_block) for transposed_block in zip(*blocks)]
-    assert len(transposed_blocks) == key_size, 'Number of transposed blocks does not equal key_size!'
-    for transposed_block in transposed_blocks:
-        assert len(transposed_block) == n_blocks, 'Transposed block length does not equal n_blocks!'
-    # Solve each block as if it was single-character XOR and combine the single-character keys to get the whole key.
-    key = ''.join((decrypt_single_character_xor(transposed_block)[0] for transposed_block in transposed_blocks))
-    print(key_size)
-    print(key)
-    repeating_key_xor = RepeatingKeyXOR(key)
-    return repeating_key_xor.decrypt(encrypted)
-
-
 def get_blocks(encrypted, key_size, n_blocks):
     return [encrypted[i * key_size : (i + 1) * key_size] for i in range(n_blocks)]
 
@@ -246,7 +214,12 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
     # Split the encrypted bytes in blocks of length key_size.
     n_blocks = len(encrypted) // key_size
     blocks = get_blocks(encrypted, key_size, n_blocks)
-    print(blocks)
+    # Transpose the blocks: make a block that is the first byte of every block and so on.
+    transposed_blocks = [bytes(transposed_block) for transposed_block in zip(*blocks)]
+    # Solve each block as if it was single-character XOR and combine the single-character keys to get the whole key.
+    key = ''.join((decrypt_single_character_xor(transposed_block)[0] for transposed_block in transposed_blocks))
+    repeating_key_xor = RepeatingKeyXOR(key)
+    return repeating_key_xor.decrypt(encrypted)
 
 
 
