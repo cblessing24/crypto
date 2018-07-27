@@ -175,24 +175,24 @@ def detect_single_byte_xor_cipher(encrypted, n=5):
     return sorted(strings, key=lambda s: -s.count(' '))[:n]
 
 
-def edit_distance(string_1, string_2):
-    """ Calculate the edit (Hamming) distance between two strings.
+def edit_distance(bytes1, bytes2):
+    """ Calculate the edit (Hamming) distance between two byte sequences.
 
     Args:
-        string_1: The first string.
-        string_2: The second string.
+        bytes1: The first sequence of bytes.
+        bytes2: The second sequence of bytes.
 
     Returns:
-        The edit distance between the strings as an integer.
+        The edit distance between the two sequences of bytes as an integer.
     """
-    if not isinstance(string_1, str) or not isinstance(string_2, str):
-        raise ValueError('Inputs must be strings!')
-    if len(string_1) != len(string_2):
+    if not isinstance(bytes1, bytes) or not isinstance(bytes2, bytes):
+        raise ValueError('Inputs must be bytes!')
+    if len(bytes1) != len(bytes2):
         raise ValueError('Inputs must have same length!')
     distance = 0
-    for char_1, char_2 in zip(string_1, string_2):
-        binary_1, binary_2 = (bin(ord(char))[2:].zfill(8) for char in (char_1, char_2))
-        distance += sum(bit_1 != bit_2 for bit_1, bit_2 in zip(binary_1, binary_2))
+    for byte1, byte2 in zip(bytes1, bytes2):
+        binary1, binary2 = (bin(byte)[2:].zfill(8) for byte in (byte1, byte2))
+        distance += sum(bit1 != bit2 for bit1, bit2 in zip(binary1, binary2))
     return distance
 
 
@@ -237,14 +237,10 @@ def main():
     # with open('challenge_6_data.txt', 'r') as f:
     #     decrypted = decrypt(base64.b64decode(f.read()), n_key_size_blocks=4)
     #     print(decrypted)
-    string = 'Hallo Peter, was geht ab?'
-    encoded = string.encode('utf-8')
-    print(encoded)
-    print(encoded.decode('utf-8'))
-    # repeating_key_xor = RepeatingKeyXOR('gfiorsjhg')
-    # encrypted = repeating_key_xor.encrypt(string)
-    # decrypted = repeating_key_xor.decrypt(encrypted)
-    # print(string == decrypted)
+
+    string1, string2 = 'this is a test', 'wokka wokka!!!'
+    bytes1, bytes2 = (string.encode('utf-8') for string in (string1, string2))
+    print(edit_distance(bytes1, bytes2))
 
 
 if __name__ == '__main__':
