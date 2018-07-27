@@ -1,5 +1,6 @@
 import base64
-from itertools import cycle
+from itertools import cycle, permutations
+from string import ascii_lowercase
 
 
 class RepeatingKeyXOR:
@@ -8,30 +9,37 @@ class RepeatingKeyXOR:
         self.key = key
 
     def encrypt(self, text):
-        """ Encrypt a string using a repeating key XOR cipher.
+        """ Encrypt text using a repeating-key XOR cipher.
 
         Args:
             text(String): The text to encrypt.
-            key (String): The Key to encrypt the text with.
 
         Returns:
-            The encrypted text as bytes.
+            The encrypted text (bytes).
         """
         return bytes(ord(text_char) ^ ord(key_char) for text_char, key_char in zip(text, cycle(self.key)))
 
-
     def decrypt(self, encrypted):
-        """ Decrypt a string using a repeating key XOR cipher.
+        """ Decrypt text using a repeating-key XOR cipher.
 
         Args:
             encrypted (Bytes): The bytes to decrypt.
-            key (String): The key to decrypt the encrypted bytes with.
 
         Returns:
-            The decrypted string.
+            The decrypted text (string).
         """
         letters = (chr(encrypted_byte ^ ord(key_char)) for encrypted_byte, key_char in zip(encrypted, cycle(self.key)))
         return ''.join(letters)
+
+    # def break_(self, encrypted, min_key_size=2, max_key_size=40):
+    #     """ Break the repeating-key XOR and decrypt the text.
+    #
+    #     Args:
+    #         encrypted (Bytes): The bytes to decrypt.
+    #
+    #     Returns:
+    #         The decrypted text (string).
+    #     """
 
 
 def hex_to_base64(hex_string):
@@ -46,24 +54,53 @@ def hex_to_base64(hex_string):
     return base64.b64encode(bytes.fromhex(hex_string))
 
 
-def score(string):
+# def score(string):
+#     """ Score a piece of english plaintext according to letter frequencies.
+#
+#     Source: https://en.wikipedia.org/wiki/Letter_frequency
+#
+#     Args:
+#         string: The string to be scored.
+#
+#     Returns:
+#         The score of the string normalized by the length of the string.
+#     """
+#     letter_frequencies = {
+#         'a': 0.0651738, 'b': 0.0124248, 'c': 0.0217339, 'd': 0.0349835, 'e': 0.1041442, 'f': 0.0197881, 'g': 0.0158610,
+#         'h': 0.0492888, 'i': 0.0558094, 'j': 0.0009033, 'k': 0.0050529, 'l': 0.0331490, 'm': 0.0202124, 'n': 0.0564513,
+#         'o': 0.0596302, 'p': 0.0137645, 'q': 0.0008606, 'r': 0.0497563, 's': 0.0515760, 't': 0.0729357, 'u': 0.0225134,
+#         'v': 0.0082903, 'w': 0.0171272, 'x': 0.0013692, 'y': 0.0145984, 'z': 0.0007836, ' ': 0.1918182
+#     }
+#     return sum(letter_frequencies.get(char, 0) for char in string.lower()) / len(string)
+
+
+def score(text):
     """ Score a piece of english plaintext according to letter frequencies.
 
     Source: https://en.wikipedia.org/wiki/Letter_frequency
 
     Args:
-        string: The string to be scored.
+        text: The text to be scored.
 
     Returns:
         The score of the string normalized by the length of the string.
     """
-    letter_frequencies = {
+    character_frequencies = {
         'a': 0.0651738, 'b': 0.0124248, 'c': 0.0217339, 'd': 0.0349835, 'e': 0.1041442, 'f': 0.0197881, 'g': 0.0158610,
         'h': 0.0492888, 'i': 0.0558094, 'j': 0.0009033, 'k': 0.0050529, 'l': 0.0331490, 'm': 0.0202124, 'n': 0.0564513,
         'o': 0.0596302, 'p': 0.0137645, 'q': 0.0008606, 'r': 0.0497563, 's': 0.0515760, 't': 0.0729357, 'u': 0.0225134,
         'v': 0.0082903, 'w': 0.0171272, 'x': 0.0013692, 'y': 0.0145984, 'z': 0.0007836, ' ': 0.1918182
     }
-    return sum(letter_frequencies.get(char, 0) for char in string.lower()) / len(string)
+    length = len(text)
+    # Get rid of any characters that are not in ascii_lowercase + ' '.
+    #text = ''.join(letter if letter in ascii_lowercase + ' ' else '' for letter in text.lower())
+    text = text.lower()
+    character_counts = {letter: text.count(letter) for letter in text}
+    chi_squared = 0
+    for character, observed_count in character_counts.items():
+        expected_count = character_frequencies.get(character, 0.0001) * length
+        chi_squared += (observed_count - expected_count) ** 2 / expected_count
+    return chi_squared
 
 
 def fixed_xor(encoded_1, encoded_2):
@@ -82,6 +119,14 @@ def fixed_xor(encoded_1, encoded_2):
         raise ValueError('Inputs must have same length!')
     buffer_1, buffer_2 = [bytes.fromhex(string) for string in [encoded_1, encoded_2]]
     return bytes([byte_1 ^ byte_2 for byte_1, byte_2 in zip(buffer_1, buffer_2)])
+
+
+def _arg_min(pairs):
+    return min(pairs, key=lambda x: x[1])[0]
+
+
+def arg_min_index(values):
+    return _arg_min(enumerate(values))
 
 
 def _arg_max(pairs):
@@ -111,7 +156,7 @@ def decrypt_single_character_xor(encrypted):
     """
     decrypted = [''.join(chr(byte ^ key) for byte in encrypted) for key in range(256)]
     scores = [score(string) for string in decrypted]
-    key_index = arg_max_index(scores)
+    key_index = arg_min_index(scores)
     key = chr(key_index)
     return key, decrypted[key_index]
 
@@ -151,7 +196,7 @@ def edit_distance(string_1, string_2):
     return distance
 
 
-def decrypt(encrypted, min_key_size=2, max_key_size=40):
+def decrypt2(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
     smallest_distance, key_size = None, None
     for test_key_size in range(min_key_size, max_key_size + 1):
         # Take the first test_key_size worth of bytes and the second test_key_size worth of bytes.
@@ -161,7 +206,7 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40):
         distance = edit_distance(*(''.join(chr(byte) for byte in bytes_) for bytes_ in (bytes_1, bytes_2)))
         # Normalize the edit distance by dividing by test_key_size.
         distance /= test_key_size
-        # The test_key_size with the smallest normalized edit distance is probably the test_key_size of the actual key.
+        # The test_key_size with the smallest normalized edit distance is probably the key size of the actual key.
         if smallest_distance is None or distance < smallest_distance:
             smallest_distance, key_size = distance, test_key_size
     # Split the encrypted bytes in blocks of length key_size.
@@ -176,16 +221,30 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40):
         assert len(transposed_block) == n_blocks, 'Transposed block length does not equal n_blocks!'
     # Solve each block as if it was single-character XOR and combine the single-character keys to get the whole key.
     key = ''.join((decrypt_single_character_xor(transposed_block)[0] for transposed_block in transposed_blocks))
+    print(key_size)
+    print(key)
+    repeating_key_xor = RepeatingKeyXOR(key)
+    return repeating_key_xor.decrypt(encrypted)
+
+
+def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
+    test_key_size = 10
+    key_size_blocks = [encrypted[i * test_key_size: (i + 1) * test_key_size] for i in range(n_key_size_blocks)]
+    distances = [edit_distance()]
 
 
 def main():
     # with open('challenge_6_data.txt', 'r') as f:
-    #     decrypt(base64.b64decode(f.read()))
+    #     decrypted = decrypt(base64.b64decode(f.read()), n_key_size_blocks=4)
+    #     print(decrypted)
     string = 'Hallo Peter, was geht ab?'
-    repeating_key_xor = RepeatingKeyXOR('gfiorsjhg')
-    encrypted = repeating_key_xor.encrypt(string)
-    decrypted = repeating_key_xor.decrypt(encrypted)
-    print(string == decrypted)
+    encoded = string.encode('utf-8')
+    print(encoded)
+    print(encoded.decode('utf-8'))
+    # repeating_key_xor = RepeatingKeyXOR('gfiorsjhg')
+    # encrypted = repeating_key_xor.encrypt(string)
+    # decrypted = repeating_key_xor.decrypt(encrypted)
+    # print(string == decrypted)
 
 
 if __name__ == '__main__':
