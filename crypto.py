@@ -219,7 +219,7 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
     # Solve each block as if it was single-character XOR and combine the single-character keys to get the whole key.
     key = ''.join((decrypt_single_character_xor(transposed_block)[0] for transposed_block in transposed_blocks))
     repeating_key_xor = RepeatingKeyXOR(key)
-    return repeating_key_xor.decrypt(encrypted)
+    return key, repeating_key_xor.decrypt(encrypted)
 
 
 
