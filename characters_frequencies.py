@@ -2,69 +2,101 @@ import os
 import shelve
 from string import printable
 
-class CharacterFrequencies:
+class CharacterFrequencyDatabase:
 
     def __init__(self, db_path):
         self.db_path = db_path
-        self.character_counts = None
-        self.n_characters = None
-        self.character_frequencies = None
+        self.char_counts = None
+        self.n_chars = None
+        self.char_frequencies = None
         if os.path.isfile(self.db_path):
             self.load()
         else:
             self.init_db()
 
     def init_db(self):
-        self.character_counts = {character: 0 for character in printable}
-        self.n_characters = 0
-        self.character_frequencies = {character: 0 for character in printable}
+        self.char_counts = {char: 0 for char in printable}
+        self.n_chars = 0
+        self.char_frequencies = {char: 0 for char in printable}
 
     def load(self):
         with shelve.open(self.db_path) as db:
-            self.character_counts = db['character_counts']
-            self.n_characters = db['n_characters']
-            self.character_frequencies = db['character_frequencies']
+            self.char_counts = db['character_counts']
+            self.n_chars = db['n_characters']
+            self.char_frequencies = db['character_frequencies']
 
     def save(self):
         with shelve.open(self.db_path) as db:
-            db['character_counts'] = self.character_counts
-            db['n_characters'] = self.n_characters
-            db['character_frequencies'] = self.character_frequencies
+            db['character_counts'] = self.char_counts
+            db['n_characters'] = self.n_chars
+            db['character_frequencies'] = self.char_frequencies
 
     @staticmethod
-    def get_character_counts(text):
-        return {character: text.count(character) for character in printable}
+    def get_char_counts(text):
+        return {char: text.count(char) for char in printable}
 
     @staticmethod
-    def get_n_characters(character_counts):
+    def get_n_chars(character_counts):
         return sum(character_counts.values())
 
     def score(self, text):
-        character_counts = self.get_character_counts(text)
-        n_characters = self.get_n_characters(character_counts)
+        char_counts = self.get_char_counts(text)
+        n_chars = self.get_n_chars(char_counts)
         chi_squared = 0
-        for character, observed_count in character_counts.items():
-            expected_count = self.character_frequencies.get(character, 0.0001) * n_characters
+        for char, observed_count in char_counts.items():
+            expected_count = self.char_frequencies.get(char, 0.0001) * n_chars
             chi_squared += (observed_count - expected_count) ** 2 / expected_count
         return chi_squared
 
-    def update_character_frequencies(self):
-        for character, count in self.character_counts.items():
-            self.character_frequencies[character] = count / self.n_characters
+    def update_char_frequencies(self):
+        for char, count in self.char_counts.items():
+            self.char_frequencies[char] = count / self.n_chars
 
     def add_text(self, text):
-        character_counts = self.get_character_counts(text)
-        n_characters = self.get_n_characters(character_counts)
-        for character, count in character_counts.items():
-            self.character_counts[character] += count
-        self.n_characters += n_characters
-        self.update_character_frequencies()
+        char_counts = self.get_char_counts(text)
+        n_char = self.get_n_chars(char_counts)
+        for char, count in char_counts.items():
+            self.char_counts[char] += count
+        self.n_chars += n_char
+        self.update_char_frequencies()
+
+    def __iter__(self):
+        for char, frequency in self.char_frequencies.items():
+            yield char, frequency
+
+    def __repr__(self):
+        sorted_chars = sorted(self.char_frequencies, key=self.char_frequencies.get, reverse=True)
+        sorted_char_frequencies = [(char, self.char_frequencies[char]) for char in sorted_chars]
+        output = f'Character frequency database.\n{self.n_chars:,} characters total.\nCharacter frequencies (sorted):\n'
+        for i, (char, frequency) in enumerate(sorted_char_frequencies):
+            output += repr(f'{char}: {frequency:.5f}')
+            if (i + 1) % 5 == 0:
+                output += '\n'
+            else:
+                output += ' '
+        return output
+
+
+def text_files(path):
+    for dir_path, _, file_names in os.walk(path):
+        for file_name in file_names:
+            if os.path.splitext(file_name)[-1] == '.txt':
+                yield os.path.join(dir_path, file_name)
+
+
+def oanc_texts(path):
+    for text_file in text_files(path):
+        print('Opening:' + text_file)
+        with open(text_file, 'r') as f:
+            yield f.read().strip()
 
 
 def main():
-    character_frequencies = CharacterFrequencies('kappa')
-    for item in character_frequencies.character_frequencies.items():
-        print(item)
+    character_frequencies = CharacterFrequencyDatabase('character_data')
+    for text in oanc_texts('OANC-GrAF'):
+        character_frequencies.add_text(text)
+    character_frequencies.save()
+    print(character_frequencies)
 
 
 if __name__ == '__main__':
