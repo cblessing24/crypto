@@ -2,6 +2,7 @@ import os
 import shelve
 from string import printable
 
+
 class CharacterFrequencyDatabase:
 
     def __init__(self, db_path):
@@ -15,9 +16,8 @@ class CharacterFrequencyDatabase:
             self.init_db()
 
     def init_db(self):
-        self.char_counts = {char: 0 for char in printable}
+        self.char_counts, self.char_frequencies = ({char: 0 for char in printable} for _ in range(2))
         self.n_chars = 0
-        self.char_frequencies = {char: 0 for char in printable}
 
     def load(self):
         with shelve.open(self.db_path) as db:
@@ -39,12 +39,16 @@ class CharacterFrequencyDatabase:
     def get_n_chars(character_counts):
         return sum(character_counts.values())
 
-    def score(self, text):
+    def score_text(self, text):
         char_counts = self.get_char_counts(text)
         n_chars = self.get_n_chars(char_counts)
         chi_squared = 0
         for char, observed_count in char_counts.items():
-            expected_count = self.char_frequencies.get(char, 0.0001) * n_chars
+            frequency = self.char_frequencies[char]
+            # Use a very small frequency instead of 0 to avoid division by 0.
+            if frequency == 0:
+                frequency = 1e-4
+            expected_count = frequency * n_chars
             chi_squared += (observed_count - expected_count) ** 2 / expected_count
         return chi_squared
 
