@@ -1,5 +1,8 @@
 import base64
 from itertools import cycle, permutations
+from string import printable
+
+from database import CharacterFrequencyDatabase
 
 
 class RepeatingKeyXOR:
@@ -30,16 +33,6 @@ class RepeatingKeyXOR:
         letters = (chr(encrypted_byte ^ ord(key_char)) for encrypted_byte, key_char in zip(encrypted, cycle(self.key)))
         return ''.join(letters)
 
-    # def break_(self, encrypted, min_key_size=2, max_key_size=40):
-    #     """ Break the repeating-key XOR and decrypt the text.
-    #
-    #     Args:
-    #         encrypted (Bytes): The bytes to decrypt.
-    #
-    #     Returns:
-    #         The decrypted text (string).
-    #     """
-
 
 def hex_to_base64(hex_string):
     """ Convert a hex encoded string to base64.
@@ -51,55 +44,6 @@ def hex_to_base64(hex_string):
         The base64 encoded bytes string.
     """
     return base64.b64encode(bytes.fromhex(hex_string))
-
-
-# def score(string):
-#     """ Score a piece of english plaintext according to letter frequencies.
-#
-#     Source: https://en.wikipedia.org/wiki/Letter_frequency
-#
-#     Args:
-#         string: The string to be scored.
-#
-#     Returns:
-#         The score of the string normalized by the length of the string.
-#     """
-#     letter_frequencies = {
-#         'a': 0.0651738, 'b': 0.0124248, 'c': 0.0217339, 'd': 0.0349835, 'e': 0.1041442, 'f': 0.0197881, 'g': 0.0158610,
-#         'h': 0.0492888, 'i': 0.0558094, 'j': 0.0009033, 'k': 0.0050529, 'l': 0.0331490, 'm': 0.0202124, 'n': 0.0564513,
-#         'o': 0.0596302, 'p': 0.0137645, 'q': 0.0008606, 'r': 0.0497563, 's': 0.0515760, 't': 0.0729357, 'u': 0.0225134,
-#         'v': 0.0082903, 'w': 0.0171272, 'x': 0.0013692, 'y': 0.0145984, 'z': 0.0007836, ' ': 0.1918182
-#     }
-#     return sum(letter_frequencies.get(char, 0) for char in string.lower()) / len(string)
-
-
-def score(text):
-    """ Score a piece of english plaintext according to letter frequencies.
-
-    Source: https://en.wikipedia.org/wiki/Letter_frequency
-
-    Args:
-        text: The text to be scored.
-
-    Returns:
-        The score of the string normalized by the length of the string.
-    """
-    character_frequencies = {
-        'a': 0.0651738, 'b': 0.0124248, 'c': 0.0217339, 'd': 0.0349835, 'e': 0.1041442, 'f': 0.0197881, 'g': 0.0158610,
-        'h': 0.0492888, 'i': 0.0558094, 'j': 0.0009033, 'k': 0.0050529, 'l': 0.0331490, 'm': 0.0202124, 'n': 0.0564513,
-        'o': 0.0596302, 'p': 0.0137645, 'q': 0.0008606, 'r': 0.0497563, 's': 0.0515760, 't': 0.0729357, 'u': 0.0225134,
-        'v': 0.0082903, 'w': 0.0171272, 'x': 0.0013692, 'y': 0.0145984, 'z': 0.0007836, ' ': 0.1918182
-    }
-    length = len(text)
-    # Get rid of any characters that are not in ascii_lowercase + ' '.
-    #text = ''.join(letter if letter in ascii_lowercase + ' ' else '' for letter in text.lower())
-    text = text.lower()
-    character_counts = {letter: text.count(letter) for letter in text}
-    chi_squared = 0
-    for character, observed_count in character_counts.items():
-        expected_count = character_frequencies.get(character, 0.0001) * length
-        chi_squared += (observed_count - expected_count) ** 2 / expected_count
-    return chi_squared
 
 
 def fixed_xor(encoded_1, encoded_2):
@@ -153,10 +97,11 @@ def decrypt_single_character_xor(encrypted):
     Returns:
         The key used to encrypt the string and the decrypted string.
     """
-    decrypted = [''.join(chr(byte ^ key) for byte in encrypted) for key in range(256)]
-    scores = [score(string) for string in decrypted]
+    decrypted = [''.join(chr(byte ^ ord(key)) for byte in encrypted) for key in printable]
+    db = CharacterFrequencyDatabase('character_data')
+    scores = [db.score_text(string) for string in decrypted]
     key_index = arg_min_index(scores)
-    key = chr(key_index)
+    key = printable[key_index]
     return key, decrypted[key_index]
 
 
@@ -196,7 +141,7 @@ def edit_distance(bytes1, bytes2):
 
 
 def get_blocks(encrypted, key_size, n_blocks):
-    return [encrypted[i * key_size : (i + 1) * key_size] for i in range(n_blocks)]
+    return [encrypted[i * key_size:(i + 1) * key_size] for i in range(n_blocks)]
 
 
 def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
@@ -222,11 +167,12 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
     return key, repeating_key_xor.decrypt(encrypted)
 
 
-
 def main():
     with open('challenge_6_data.txt', 'r') as f:
-        decrypted = decrypt(base64.b64decode(f.read()), n_key_size_blocks=4)
-        print(decrypted)
+        encrypted = base64.b64decode(f.read())
+        decrypted = decrypt(encrypted, n_key_size_blocks=4)
+        print(decrypted[0])
+        print(decrypted[1])
 
 
 if __name__ == '__main__':
