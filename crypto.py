@@ -1,36 +1,23 @@
 import base64
 from itertools import cycle, permutations
-from string import printable
+from typing import Tuple, List
 
 from database import CharacterFrequencyDatabase
 
 
-def encrypt_rep_key_xor(text, key):
-    """ Encrypt text using a repeating-key XOR cipher.
-
-    Args:
-        text(String): The text to encrypt.
-
-    Returns:
-        The encrypted text (bytes).
-    """
+def encrypt_rep_key_xor(text: str, key: str) -> bytes:
+    """ Encrypt text using a repeating-key XOR cipher. """
     return bytes(ord(text_char) ^ ord(key_char) for text_char, key_char in zip(text, cycle(key)))
 
 
-def decrypt_rep_key_xor(encrypted, key):
-    """ Decrypt text using a repeating-key XOR cipher.
-
-    Args:
-        encrypted (Bytes): The bytes to decrypt.
-
-    Returns:
-        The decrypted text (string).
-    """
+def decrypt_rep_key_xor(encrypted: bytes, key: str) -> str:
+    """ Decrypt text using a repeating-key XOR cipher. """
     letters = (chr(encrypted_byte ^ ord(key_char)) for encrypted_byte, key_char in zip(encrypted, cycle(key)))
     return ''.join(letters)
 
 
-def break_rep_key_xor(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
+def break_rep_key_xor(encrypted: bytes, min_key_size=2, max_key_size=40, n_key_size_blocks=2) -> Tuple[str, str]:
+    """ Find the key for a repeating key XOR encrypted text and decrypt it."""
     smallest_distance, key_size = None, None
     for test_key_size in range(min_key_size, max_key_size + 1):
         key_size_blocks = get_blocks(encrypted, test_key_size, n_key_size_blocks)
@@ -52,20 +39,12 @@ def break_rep_key_xor(encrypted, min_key_size=2, max_key_size=40, n_key_size_blo
     return key, decrypt_rep_key_xor(encrypted, key)
 
 
-def get_blocks(encrypted, key_size, n_blocks):
+def get_blocks(encrypted: bytes, key_size: int, n_blocks: int) -> List[bytes]:
     return [encrypted[i * key_size:(i + 1) * key_size] for i in range(n_blocks)]
 
 
-def edit_distance(bytes1, bytes2):
-    """ Calculate the edit (Hamming) distance between two byte sequences.
-
-    Args:
-        bytes1: The first sequence of bytes.
-        bytes2: The second sequence of bytes.
-
-    Returns:
-        The edit distance between the two sequences of bytes as an integer.
-    """
+def edit_distance(bytes1: bytes, bytes2: bytes) -> float:
+    """ Calculate the edit (Hamming) distance between two byte sequences. """
     if not isinstance(bytes1, bytes) or not isinstance(bytes2, bytes):
         raise ValueError('Inputs must be bytes!')
     if len(bytes1) != len(bytes2):
@@ -77,21 +56,14 @@ def edit_distance(bytes1, bytes2):
     return distance
 
 
-def break_single_character_xor(encrypted):
-    """ Decrypt a series of bytes that has been XOR'd against a single character.
-
-    Args:
-        encrypted: The encrypted sequence of bytes
-
-    Returns:
-        The key used to encrypt the string and the decrypted string.
-    """
-
+def break_single_character_xor(encrypted: bytes) -> Tuple[str, str]:
+    """ Find the key for a single character XOR encrypted text and decrypt it. """
     db = CharacterFrequencyDatabase('character_data')
     decrypted = [''.join(chr(byte ^ ord(key)) for byte in encrypted) for key in db]
     scores = [db.score_text(string) for string in decrypted]
     key_index = arg_min_index(scores)
-    key = printable[key_index]
+    chars = [char for char in db]
+    key = chars[key_index]
     return key, decrypted[key_index]
 
 
@@ -99,7 +71,7 @@ def _arg_min(pairs):
     return min(pairs, key=lambda x: x[1])[0]
 
 
-def arg_min_index(values):
+def arg_min_index(values: List[float]) -> int:
     return _arg_min(enumerate(values))
 
 
