@@ -65,8 +65,8 @@ class CharacterFrequencyDatabase:
         self.update_char_frequencies()
 
     def __iter__(self):
-        for char, frequency in self.char_frequencies.items():
-            yield char, frequency
+        for char in self.char_frequencies:
+            yield char
 
     def __repr__(self):
         sorted_chars = sorted(self.char_frequencies, key=self.char_frequencies.get, reverse=True)

@@ -5,36 +5,28 @@ from string import printable
 from database import CharacterFrequencyDatabase
 
 
-class RepeatingKeyXOR:
+def encrypt_rep_key_xor(text, key):
+    """ Encrypt text using a repeating-key XOR cipher.
 
-    def __init__(self, key):
-        self.key = key
+    Args:
+        text(String): The text to encrypt.
 
-    def encrypt(self, text):
-        """ Encrypt text using a repeating-key XOR cipher.
+    Returns:
+        The encrypted text (bytes).
+    """
+    return bytes(ord(text_char) ^ ord(key_char) for text_char, key_char in zip(text, cycle(key)))
 
-        Args:
-            text(String): The text to encrypt.
+def decrypt_rep_key_xor(encrypted, key):
+    """ Decrypt text using a repeating-key XOR cipher.
 
-        Returns:
-            The encrypted text (bytes).
-        """
-        return bytes(ord(text_char) ^ ord(key_char) for text_char, key_char in zip(text, cycle(self.key)))
+    Args:
+        encrypted (Bytes): The bytes to decrypt.
 
-    def decrypt(self, encrypted):
-        """ Decrypt text using a repeating-key XOR cipher.
-
-        Args:
-            encrypted (Bytes): The bytes to decrypt.
-
-        Returns:
-            The decrypted text (string).
-        """
-        letters = (chr(encrypted_byte ^ ord(key_char)) for encrypted_byte, key_char in zip(encrypted, cycle(self.key)))
-        return ''.join(letters)
-
-    def __repr__(self):
-        return f'Key: {self.key}'
+    Returns:
+        The decrypted text (string).
+    """
+    letters = (chr(encrypted_byte ^ ord(key_char)) for encrypted_byte, key_char in zip(encrypted, cycle(key)))
+    return ''.join(letters)
 
 
 def hex_to_base64(hex_string):
@@ -100,8 +92,9 @@ def decrypt_single_character_xor(encrypted):
     Returns:
         The key used to encrypt the string and the decrypted string.
     """
-    decrypted = [''.join(chr(byte ^ ord(key)) for byte in encrypted) for key in printable]
+
     db = CharacterFrequencyDatabase('character_data')
+    decrypted = [''.join(chr(byte ^ ord(key)) for byte in encrypted) for key in db]
     scores = [db.score_text(string) for string in decrypted]
     key_index = arg_min_index(scores)
     key = printable[key_index]
@@ -147,7 +140,7 @@ def get_blocks(encrypted, key_size, n_blocks):
     return [encrypted[i * key_size:(i + 1) * key_size] for i in range(n_blocks)]
 
 
-def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
+def break_rep_key_xor(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
     smallest_distance, key_size = None, None
     for test_key_size in range(min_key_size, max_key_size + 1):
         key_size_blocks = get_blocks(encrypted, test_key_size, n_key_size_blocks)
@@ -166,14 +159,13 @@ def decrypt(encrypted, min_key_size=2, max_key_size=40, n_key_size_blocks=2):
     transposed_blocks = [bytes(transposed_block) for transposed_block in zip(*blocks)]
     # Solve each block as if it was single-character XOR and combine the single-character keys to get the whole key.
     key = ''.join((decrypt_single_character_xor(transposed_block)[0] for transposed_block in transposed_blocks))
-    repeating_key_xor = RepeatingKeyXOR(key)
-    return key, repeating_key_xor.decrypt(encrypted)
+    return key, decrypt_rep_key_xor(encrypted, key)
 
 
 def main():
     with open('challenge_6_data.txt', 'r') as f:
         encrypted = base64.b64decode(f.read())
-        decrypted = decrypt(encrypted, n_key_size_blocks=4)
+        decrypted = break_rep_key_xor(encrypted, n_key_size_blocks=4)
         print(decrypted[0])
         print(decrypted[1])
 
