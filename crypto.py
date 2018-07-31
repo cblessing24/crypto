@@ -33,6 +33,9 @@ class RepeatingKeyXOR:
         letters = (chr(encrypted_byte ^ ord(key_char)) for encrypted_byte, key_char in zip(encrypted, cycle(self.key)))
         return ''.join(letters)
 
+    def __repr__(self):
+        return f'Key: {self.key}'
+
 
 def hex_to_base64(hex_string):
     """ Convert a hex encoded string to base64.
