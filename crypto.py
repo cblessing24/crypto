@@ -16,8 +16,10 @@ def decrypt_rep_key_xor(encrypted: bytes, key: str) -> str:
     return ''.join(letters)
 
 
-def break_rep_key_xor(encrypted: bytes, min_key_size=2, max_key_size=40, n_key_size_blocks=2) -> Tuple[str, str]:
-    """ Find the key for a repeating key XOR encrypted text and decrypt it."""
+def break_rep_key_xor(encrypted: bytes, min_key_size=2, max_key_size=40, n_key_size_blocks=2) -> str:
+    if not 2 < n_key_size_blocks < len(encrypted) // max_key_size:
+        raise ValueError(f'Parameter value too small or too large! (n_key_size_blocks = {n_key_size_blocks})')
+    """ Find the key for a repeating key XOR encrypted text."""
     smallest_distance, key_size = None, None
     for test_key_size in range(min_key_size, max_key_size + 1):
         key_size_blocks = get_blocks(encrypted, test_key_size, n_key_size_blocks)
@@ -36,7 +38,7 @@ def break_rep_key_xor(encrypted: bytes, min_key_size=2, max_key_size=40, n_key_s
     transposed_blocks = [bytes(transposed_block) for transposed_block in zip(*blocks)]
     # Solve each block as if it was single-character XOR and combine the single-character keys to get the whole key.
     key = ''.join((break_single_character_xor(transposed_block)[0] for transposed_block in transposed_blocks))
-    return key, decrypt_rep_key_xor(encrypted, key)
+    return key
 
 
 def get_blocks(encrypted: bytes, key_size: int, n_blocks: int) -> List[bytes]:
@@ -138,9 +140,9 @@ def detect_single_byte_xor_cipher(encrypted, n=5):
 def main():
     with open('challenge_6_data.txt', 'r') as f:
         encrypted = base64.b64decode(f.read())
-        decrypted = break_rep_key_xor(encrypted, n_key_size_blocks=4)
-        print(decrypted[0])
-        print(decrypted[1])
+        key = break_rep_key_xor(encrypted, n_key_size_blocks=4)
+        decrypted = decrypt_rep_key_xor(encrypted, key)
+        print(decrypted)
 
 
 if __name__ == '__main__':
