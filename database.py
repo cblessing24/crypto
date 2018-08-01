@@ -33,11 +33,11 @@ class CharacterFrequencyDatabase:
             db['character_frequencies'] = self.char_frequencies
 
     @staticmethod
-    def get_char_counts(text: str) -> Dict[str: int]:
+    def get_char_counts(text: str) -> Dict[str, int]:
         return {char: text.count(char) for char in printable}
 
     @staticmethod
-    def get_n_chars(character_counts: Dict[str: int]) -> int:
+    def get_n_chars(character_counts: Dict[str, int]) -> int:
         return sum(character_counts.values())
 
     def score_text(self, text: str) -> float:
